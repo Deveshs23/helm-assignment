@@ -1,0 +1,61 @@
+nameOverride: "setu-private"
+fullnameOverride: "setu-private"
+replicaCount: 2
+autoscaling:
+  enabled: false
+podAnnotations:
+  app.kubernetes.io/managed-by: Helm
+podSecurityContext: 
+  fsGroup: 2000
+default:
+  probes:
+      liveness:
+        path: /health/live
+        port: http
+      readiness:
+        path: /health/ready
+        port: http
+  imagePullPolicy: IfNotPresent
+  labels:
+    label1: value1
+    label2: value2
+containers:
+  - name: nginx
+    image:
+      repository: nginx
+      tag: "1.17.9"
+    ports:
+    - name: http
+      containerPort: 80
+      protocol: TCP
+    probes:
+      liveness:
+        path: /health
+        port: http
+    resources: 
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi 
+    resources: {}
+
+
+
+service:
+  type: ClusterIP
+  port: 80
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

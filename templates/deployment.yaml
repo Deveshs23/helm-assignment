@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "setu.fullname" . }}
+  labels:
+    {{- include "setu.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "setu.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "setu.selectorLabels" . | nindent 8 }}
+        {{- with .Values.default.labels }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        {{- range .Values.containers }}
+        - name: {{ .name }}
+          image: "{{ .image.repository }}:{{ .image.tag }}"
+          imagePullPolicy: {{ .image.pullPolicy | default $.Values.default.imagePullPolicy }}
+          ports:
+          {{- range $port := .ports }}
+            - name: {{ $port.name }}
+              containerPort: {{ $port.containerPort }}
+              protocol: {{ $port.protocol }}
+          {{- end }}
+          {{- if .probes }}
+          {{- if .probes.liveness }}
+          livenessProbe:
+            httpGet:
+              {{- toYaml .probes.liveness | nindent 14 }}
+          {{- end }}  
+          {{- if .probes.readiness }}
+          readinessProbe:
+            httpGet:
+              {{- toYaml .probes.readiness | nindent 14 }}
+          {{- end }}  
+          {{- else }}
+          livenessProbe:
+            httpGet:
+              {{- toYaml $.Values.default.probes.liveness | nindent 14 }}
+          readinessProbe:
+            httpGet:
+              {{- toYaml $.Values.default.probes.readiness | nindent 14 }}
+          {{- end }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
